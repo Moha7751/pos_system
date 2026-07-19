@@ -1,0 +1,47 @@
+format_version: '13'
+default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
+project_type: flutter
+
+workflows:
+  build_apk:
+    description: إنشاء مشروع Android ثم بناء APK تجريبي قابل للتثبيت
+    steps:
+    - activate-ssh-key@4: {}
+    - git-clone@8: {}
+    - script@1:
+        title: فحص ملفات المشروع
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            set -ex
+            pwd
+            test -f pubspec.yaml
+            test -f lib/main.dart
+    - flutter-installer@1:
+        inputs:
+        - version: stable
+    - script@1:
+        title: إنشاء ملفات Android الناقصة
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            set -ex
+            flutter --version
+            flutter create . \
+              --platforms=android \
+              --org com.lifeengineer \
+              --project-name life_engineer
+            flutter pub get
+            flutter analyze
+    - flutter-build@0:
+        inputs:
+        - platform: android
+        - android_output_type: apk
+        - build_mode: release
+        - project_location: "$BITRISE_SOURCE_DIR"
+    - deploy-to-bitrise-io@2: {}
+
+meta:
+  bitrise.io:
+    stack: linux-docker-android-22.04
+    machine_type_id: standard
